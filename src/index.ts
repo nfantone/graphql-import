@@ -22,6 +22,14 @@ export interface RawModule {
   from: string
 }
 
+/**
+ * Configuration options that may be passed to `importSchema`
+ */
+interface ImportSchemaOptions {
+  schemas?: { [key:string]: string }
+  mergeableTypes?: [string]
+}
+
 const rootFields = ['Query', 'Mutation', 'Subscription']
 
 const read = (schema: string, schemas?: { [key: string]: string }) => {
@@ -75,13 +83,20 @@ export function parseSDL(sdl: string): RawModule[] {
 /**
  * Main entry point. Recursively process all import statement in a schema
  *
- * @param filePath File path to the initial schema file
+ * @see https://oss.prisma.io/content/graphql-import/overview#description
+ * @param schema File path to the initial schema file
+ * @param options Import configuration options
+ * @param options.schemas An object of schemas as strings
+ * @param options.mergeableTypes An array of custom GraphQL types that will
+ *  be treated as [root fields]{@link https://oss.prisma.io/content/graphql-import/overview#import-root-fields}
  * @returns Single bundled schema with all imported types
  */
 export function importSchema(
   schema: string,
-  schemas?: { [key: string]: string },
+  options: ImportSchemaOptions = {},
 ): string {
+  const { schemas, mergeableTypes = [] } = options
+  const allMergeableTypes = [...mergeableTypes, ...rootFields]
   const sdl = read(schema, schemas) || schema
   let document = getDocumentFromSDL(sdl)
 
@@ -94,14 +109,15 @@ export function importSchema(
   )
 
   // Post processing of the final schema (missing types, unused types, etc.)
-  // Query, Mutation and Subscription should be merged
+  // Query, Mutation, Subscription and any custom type defined in `mergeableTypes`
+  // should be merged
   // And should always be in the first set, to make sure they
   // are not filtered out.
   const firstTypes = flatten(typeDefinitions).filter(d =>
-    includes(rootFields, d.name.value),
+    includes(allMergeableTypes, d.name.value),
   )
   const otherFirstTypes = typeDefinitions[0].filter(
-    d => !includes(rootFields, d.name.value),
+    d => !includes(allMergeableTypes, d.name.value),
   )
   const firstSet = firstTypes.concat(otherFirstTypes)
   const processedTypeNames = []

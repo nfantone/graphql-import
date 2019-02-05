@@ -261,7 +261,7 @@ type C2 {
   id: ID!
 }
 `
-  t.is(importSchema(schemaA, schemas), expectedSDL)
+  t.is(importSchema(schemaA, { schemas }), expectedSDL)
 })
 
 test(`importSchema: single object schema`, t => {
@@ -324,7 +324,7 @@ type C2 {
   id: ID!
 }
 `
-  t.is(importSchema(schemaA, schemas), expectedSDL)
+  t.is(importSchema(schemaA, { schemas }), expectedSDL)
 })
 
 test(`importSchema: import all mix 'n match 2`, t => {
@@ -443,7 +443,7 @@ type C2 {
   id: ID!
 }
 `
-  t.is(importSchema(schemaA, schemas), expectedSDL)
+  t.is(importSchema(schemaA, { schemas }), expectedSDL)
 })
 
 test('importSchema: scalar', t => {
@@ -704,6 +704,31 @@ input PostFilter {
   t.is(actualSDL, expectedSDL)
 })
 
+test('merged custom root fields imports', t => {
+  const expectedSDL = `\
+type Query {
+  helloA: String
+  posts(filter: PostFilter): [Post]
+  hello: String
+}
+
+type Dummy {
+  field: String
+  field2: String
+}
+
+type Post {
+  field1: String
+}
+
+input PostFilter {
+  field3: Int
+}
+`
+  const actualSDL = importSchema('fixtures/merged-root-fields/a.graphql', { mergeableTypes: ['Dummy'] })
+  t.is(actualSDL, expectedSDL)
+})
+
 test('global schema modules', t => {
   const shared = `
     type Shared {
@@ -720,7 +745,7 @@ type Shared {
   first: String
 }
 `
-  t.is(importSchema('fixtures/global/a.graphql', { shared }), expectedSDL)
+  t.is(importSchema('fixtures/global/a.graphql', { schemas: { shared } }), expectedSDL)
 })
 
 test('missing type on type', t => {
