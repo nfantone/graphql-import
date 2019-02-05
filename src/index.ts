@@ -26,7 +26,7 @@ export interface RawModule {
  * Configuration options that may be passed to `importSchema`
  */
 interface ImportSchemaOptions {
-  schemas?: { [key:string]: string }
+  schemas?: { [key: string]: string }
   mergeableTypes?: [string]
 }
 
